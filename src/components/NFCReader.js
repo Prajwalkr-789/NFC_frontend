@@ -5,39 +5,34 @@ function NFCReader() {
   const [errorMessage, setErrorMessage] = useState("");
   const [tagData, setTagData] = useState("");
 
-  // Function to check NFC support and request permission
-  const checkNFC = async () => {
-    try {
-      if ('NFC' in window) {
-        // Request permission to access NFC
-        await navigator.nfc.requestPermission();
-        console.log("NFC Permission granted.");
-        setIsNFCEnabled(true);
-        setErrorMessage('');
-      } else {
-        setIsNFCEnabled(false);
-        setErrorMessage('Your device does not support NFC.');
-      }
-    } catch (error) {
-      console.error("Error requesting NFC permission:", error);
+  // Function to check NFC support
+  const checkNFC = () => {
+    if ('NDEFReader' in window) {
+      setIsNFCEnabled(true);
+      setErrorMessage('');
+    } else {
       setIsNFCEnabled(false);
-      setErrorMessage('NFC permission denied or device not compatible.');
+      setErrorMessage('Your device does not support Web NFC.');
     }
   };
 
   // Function to read NFC tag
   const readNFC = async () => {
     try {
-      if ('NFC' in window) {
-        // Create a new NFCReader instance
-        const reader = new NFCReader();
-        // Start scanning for NFC tags
-        await reader.scan();
-        // You can handle the tag data here
-        setTagData('NFC tag detected!');
-      }
+      const ndef = new NDEFReader();
+      await ndef.scan();
+      console.log("Scan started. Bring the tag close.");
+      ndef.onreading = (event) => {
+        const { message } = event;
+        const decoder = new TextDecoder();
+        let data = '';
+        for (const record of message.records) {
+          data += decoder.decode(record.data);
+        }
+        setTagData(data || 'NFC tag detected but no data.');
+      };
     } catch (error) {
-      console.error('Error reading NFC:', error);
+      console.error("Error reading NFC:", error);
       setErrorMessage('Failed to read NFC tag.');
     }
   };
